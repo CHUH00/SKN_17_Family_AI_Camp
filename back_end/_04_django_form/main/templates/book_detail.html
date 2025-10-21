@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ object.title }}</title>
+</head>
+<body>
+    {# <p>{{ book }}</p> #}
+
+    <h1>{{ object.title }}</h1>
+    <p>저자: {{ object.author }}</p>
+    <p>출판일: {{ object.published_date }}</p>
+    <p>가격: {{ object.price }}</p>
+
+    <a href="{% url 'main:book_list' %}">목록</a>
+
+    <!-- 수정/삭제 추가 -->
+    <!-- [수정] > book_form.html로 이동 (기존 book 정보 현출) > 수정사항 변경 후 [저장] > book_list.html 현출 -->
+    <!-- [삭제] > book_confirm_delete.html로 이동 -->
+</body>
+</html>

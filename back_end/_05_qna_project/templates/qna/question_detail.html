@@ -1,0 +1,189 @@
+{% extends '../layout/base.html' %}
+
+{% block content %}
+    <div class="container my-3">
+        <!-- 질문영역 시작 -->
+        <h1 class="display-6 border-bottom py-2">#{{ question.id }} {{ question.subject }}</h1>
+        <div class="card mt-3">
+            <div class="card-body">
+                <div class="card-text" style="white-space: pre-line;">{{ question.content }}</div>
+                <div class="d-flex justify-content-end">
+                    <div class="badge bg-light text-dark p-2 text-start">
+                        <div class="mb-2">{{ question.author.username }}</div>
+                        <div class="mb-2">{{ question.created_at }}</div>
+                        {# 편집된 경우에만 출력 #}
+                        {% if question.created_at < question.modified_at %}
+                            <div>{{ question.modified_at }}(편집됨)</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="my-3">
+                    {# 질문 추천 #}
+                    <a href="javascript:void(0)"
+                       data-uri="{% url 'qna:question_vote' question.id  %}"
+                       class="recommend btn btn-sm btn-outline-secondary"> 추천
+                        <span class="badge rounded-pill bg-success">{{question.voter.count}}</span>
+                    </a>
+                    {# 질문 수정/삭제 #}
+                    {% if question.author == request.user %}
+                        <a href="{% url 'qna:question_modify' question.id %}" class="btn btn-sm btn-outline-secondary">수정</a>
+                        <a href="javascript:void(0)" data-uri="{% url 'qna:question_delete' question.id %}" class="remove btn btn-sm btn-outline-danger">삭제</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <!-- 질문영역 끝 -->
+
+        <div class="my-3">
+            <a class="link-primary" href="{% url 'qna:index' %}">목록</a>
+        </div>
+
+        <!-- 답변 목록 시작 -->
+        {% for answer in question.answer_set.all %}
+            <div id="answer_{{ answer.id }}" class="card my-3">
+                <div class="card-body">
+                    <span class="badge text-bg-secondary">{{ forloop.counter }}</span>
+                    <div class="card-text" style="white-space: pre-line;">
+                        {{ answer.content }}
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        <div class="badge bg-light text-dark p-2 text-start">
+                            <div class="mb-2">{{ answer.author.username }}</div>
+                            <div>{{ answer.created_at }}</div>
+                        </div>
+                    </div>
+                    <div class="my-3">
+                        {# 답변 추천 #}
+                        <a href="javascript:void(0)"
+                           data-uri="{% url 'qna:answer_vote' answer.id  %}"
+                           class="recommend btn btn-sm btn-outline-secondary"> 추천
+                            <span class="badge rounded-pill bg-success">{{answer.voter.count}}</span>
+                        </a>
+                        {# 답변 수정/삭제 #}
+                        {% if answer.author == request.user %}
+                            <a href="javascript:void(0)"
+                                data-bs-toggle="modal"
+                                data-bs-target="#answerModifyModal"
+                                data-answer-id="{{ answer.id }}"
+                                data-answer-content="{{ answer.content }}"
+                                class="btn btn-sm btn-outline-secondary">수정</a>
+                            <a href="javascript:void(0)"
+                                data-uri="{% url 'qna:answer_delete' answer.id %}?question_id={{ question.id }}"
+                                class="remove btn btn-sm btn-outline-danger">삭제</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+        <!-- 답변 목록 끝 -->
+
+        <!-- 답변 등록 시작 -->
+        <form name="answerCreateFrm" action="{% url 'qna:answer_create' question.id %}" method="post" class="my-3">
+            <div class="mb-3">
+                {# csrf 검증처리 : cross-site request forgery 서버가 생성한 정상적인 폼페이지 검증 #}
+                {% csrf_token %}
+                <label for="content" class="form-label">답변내용</label>
+                <textarea name="content" id="content" class="form-control" rows="10" required {% if user.is_anonymous %}disabled{% endif %}></textarea>
+            </div>
+            <input type="submit" value="답변등록" class="btn btn-primary">
+        </form>
+        <!-- 답변 등록 끝 -->
+    </div>
+
+    <!-- 질문/답변 삭제폼 -->
+    <form action="" name="questionAnswerDeleteFrm" method="post">
+        {% csrf_token %}
+    </form>
+
+    <!-- Answer Modify Modal -->
+    <div class="modal fade" id="answerModifyModal" tabindex="-1" aria-labelledby="answerModifyModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="answerModifyModalLabel">답변수정</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form name="answerModifyFrm" method="post" action="">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <textarea name="content" id="content-modify" class="form-control" rows="10" required></textarea>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Save changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block script %}
+<script>
+    document.answerCreateFrm.onsubmit = (e) => {
+        {% if user.is_anonymous %}
+            e.preventDefault();
+
+            if(confirm('로그인이 필요한 서비스입니다. 로그인 페이지로 이동하시겠습니까?')) {
+                location.href = "{% url 'uauth:login' %}?next={{ request.path }}"
+            }
+        {% endif %}
+    };
+    
+    // 질문/답변 삭제 처리
+    const $removeAs = document.querySelectorAll('.remove');
+    console.log($removeAs);
+    $removeAs.forEach((a_tag) => {
+        a_tag.onclick = (e) => {
+            // console.log(e.target.dataset)
+            if(confirm('정말 삭제하시겠습니까?')) {
+                const $frm = document.questionAnswerDeleteFrm;
+                $frm.action = e.target.dataset.uri;
+                $frm.submit()
+            }
+        };
+    })
+
+    // 답변 수정처리
+    const $answerModifyAs = document.querySelectorAll('[data-answer-id]');
+    $answerModifyAs.forEach((a_tag) => {
+       a_tag.onclick = (e) => {
+           {#console.log(e.target.dataset.answerId); // data-answer-id -> answerId#}
+           {#console.log(e.target.dataset.answerContent); // data-answer-conetent -> answerContent#}
+
+           document.answerModifyFrm.action = `/qna/answer/modify/${e.target.dataset.answerId}/?question_id={{ question.id }}`;
+           document.answerModifyFrm.querySelector('textarea#content-modify').textContent = e.target.dataset.answerContent;
+       };
+    });
+
+    // 질문/답변 추천
+    const recommend_elements = document.getElementsByClassName("recommend");
+    Array.from(recommend_elements).forEach((element) => {
+        // js의 비동기처리를 지원하는 async..await을 사용
+        element.addEventListener('click', async (e) => {
+
+            {% if not user.is_authenticated %}
+                if(confirm('로그인이 필요한 서비스입니다. 로그인 페이지로 이동하시겠습니까?')) {
+                    location.href = "{% url 'uauth:login' %}?next={{ request.path }}"
+                }
+            {% endif %}
+
+            // a태그 또는 자식span태그 클릭 대응
+            const url = e.target.dataset?.uri || e.target.parentElement.dataset.uri;
+
+            // fetch는 HTTP 상태 코드가 200이 아닐 경우에도 예외 발생하지 않음 (직접 예외처리 필요)
+            // async..await을 통한 동기적 처리 코드 작성
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}',
+                },
+                body: JSON.stringify({'question_id': {{ question.id }}}),
+            });
+            const data = await response.json();
+            element.querySelector('span').textContent = data.votes_count;
+        });
+    });
+</script>
+{% endblock script %}

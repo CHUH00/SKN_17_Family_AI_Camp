@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Django Session</title>
+</head>
+<body>
+    <h1>Session</h1>
+
+    {% if request.session.username %}
+        <h3>Hello, {{ request.session.username }}</h3>
+
+        <form action="{% url 'app:clear_session' %}" method="post">
+            {% csrf_token %}
+            <button type="submit">Session CLEAR</button>
+        </form>
+
+        <p>포인트: {{ request.session.point }}</p>
+        <p>확률: {{ request.session.prob }}</p>
+        <p>
+            <label for="expired">만료 여부</label>
+            <input type="checkbox" name="expired" id="expired" {% if request.session.expired %}checked{% endif %}>
+        </p>
+        <p>
+            {% for num in request.session.nums %}
+                <mark>{{ num }}</mark>
+            {% endfor %}
+        </p>
+        <ul>
+            <li>{{ request.session.data.message }}</li>
+            <li>{{ request.session.data.today }}</li>
+        </ul>
+
+    {% else %}
+        <h3>Hello, Guest!</h3>
+
+        <form action="{% url 'app:set_session' %}" method="post">
+            {% csrf_token %}
+            <label for="username">이름을 입력하세요:</label>
+            <input type="text" id="useraname" name="username" required>
+            <button type="submit">이름 저장🤖</button>
+        </form>
+    {% endif %}
+
+</body>
+</html>

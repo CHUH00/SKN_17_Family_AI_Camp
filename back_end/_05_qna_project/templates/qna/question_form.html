@@ -1,0 +1,38 @@
+{% extends '../layout/base.html' %}
+
+{% block content %}
+    <div class="container">
+        <h5 class="my-3 border-bottom pb-2">
+            {% if '/question/create' in request.path %}
+                질문 등록	
+            {% else %}
+            	질문 수정
+            {% endif %}
+        </h5>
+        <form method="post">
+            <!-- 오류메시지 시작 -->
+            {% include '../layout/form_errors.html' %}
+            <!-- 오류메시지 끝 -->
+            
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="subject" class="form-label">{{ form.subject.label }}</label>
+                <input
+                    type="text"
+                    class="form-control"
+                    name="subject"
+                    id="subject"
+                    value="{{ form.subject.value | default_if_none:'' }}">
+            </div>
+            <div class="mb-3">
+                <label for="content" class="form-label">{{ form.content.label }}</label>
+                <textarea
+                        class="form-control"
+                        name="content"
+                        id="content"
+                        rows="10">{{ form.content.value|default_if_none:'' }}</textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">저장</button>
+        </form>
+    </div>
+{% endblock %}
